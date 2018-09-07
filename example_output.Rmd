@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "SUM demo"
 author: "carljpearson"
 date: "9/7/2018"
 output: html_document
@@ -14,6 +14,7 @@ output: html_document
 library(tidyverse) #all data wrangling/plotting
 library(psych) #just for the geometric averaging
 library(knitr) #for rmarkdown
+library(ggthemes) #tufte plots
 
 #preparation: here we get the data and add our own extra data like time specs and color choices for plots -----
 
@@ -164,7 +165,7 @@ df$tspec[df$task==4] <- 300
 #data analysis: everything is now in place to begin to summarise and calculate -----
 #NOTE THIS SCRIPT IS MADE HAVING ONLY ONE GROUP/VERSION/ETC 
 #We will filter for a singleg group for now, but I plan to update this once I have all my real data with 2 versions
-df <- df %>% filter(group==1)
+#df <- df %>% filter(group==1)
 
   #create completion df ----
 df %>%
@@ -307,7 +308,7 @@ kable(head(df))
 
 ### What happens after all these individual lines
 
-The script calculates all sub-task raw measures. 
+####The script calculates all sub-task raw measures. 
 
 * **Task completion**
   + LaPlace point estimates
@@ -319,22 +320,161 @@ The script calculates all sub-task raw measures.
   + Standard average point estimates
   + Standard confidence intervals
 
-To make it into the SUM, all values are standardized based on a benchmark value
+####To make it into the SUM, all values are standardized based on a benchmark value.
 
 * **Task completion**
-  + LaPlace point estimates
-  + Adjusted Wald confidence intervals
+  + Converted directly to percentage value based on the pnorm() function
+  + (A good benchmark is .78, but small samples make it tough to approximate a z-score)
 * **Time-on-task** for completed tasks only
-  + Geometric average point estimates (to help account for skew)
-  + Standard confidence intervals
+  + You enter the time you aim for all users to complete the task by to get benchmarks
+  + Converted to z-score and then percentage equivalent
 * **Satisfaction** 
-  + Standard average point estimates
-  + Standard confidence intervals
+  + We use a standard benchmark of 4/5 for 'good' usability
+  + Converted to z-score and then percentage equivalent
   
-Here's what your summarized (or summari*s*ed, if you're using dplyr) table looks like
+To make it more accesible to non-researchers, I translate the percentage to an **NPS like score of -100 to 100**. Here's what your summarized (or summari*s*ed, if you're using dplyr) table looks like:
 
-```{r pressure, echo=FALSE}
-kable(df_summarised)
+```{r echo=FALSE}
+df_summarised %>%
+  select(
+    'Group' = group,
+    "Task" = task,
+    'Raw point estimate' = point.est,
+    'Raw lower confidence' = lowerci,
+    'Raw upper confidence' = upperci,
+    'NPS point estimate' = point_est.nps,
+    'NPS lower confidence' = lowerci.nps,
+    'NPS upper confidence' = upperci.nps
+    
+  ) %>% kable(caption="Selected example columns",digits = 2)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+####Next we average the NPS-like values to get our task level SUM scores.
+
+```{r echo=FALSE}
+df_task %>%
+  select(
+    'Group' = group,
+    "Task" = task,
+    'NPS point estimate' = point_est.nps,
+    'NPS lower confidence' = lowerci.nps,
+    'NPS upper confidence' = upperci.nps
+    
+  ) %>% kable(caption="Selected example columns",digits = 2)
+```
+
+####We quickly come to our final SUM values.
+
+```{r echo=FALSE}
+df_SUM %>%
+  select(
+    'Group' = group,
+    final_SUM,
+         final_SUM_low,
+         final_SUM_hi
+    
+  ) %>% kable(caption="Selected example columns",digits = 2)
+```
+
+####For our our final SUM scores, a table works well because we have just a few data points. For everything else, we may want some plots.
+
+#Plotting
+
+###First up, we can plot our data for each group individually. This is helpful when you want to review how the first round of testing went (version 1, product 1, etc).
+
+###**Raw task** metrics show the data before any transformation.
+
+```{r include=FALSE}
+
+#completion
+df_summarised %>% 
+  filter(group==1) %>% #choose grouping
+  filter(Measure=="Completion") %>% #only completion
+  ggplot(aes(x=task, y=point.est,ymin=lowerci, ymax=upperci, fill=task_named)) +  #vars to be plotted
+  geom_bar(position=position_dodge(), stat="identity") + #make a bar plot with color palette
+  geom_abline(intercept=.78,slope=0, color = "gray",linetype = 2, size=2) + #horizontal benchmark line
+  coord_cartesian(ylim=c(0,1)) + #limit y axis between 0-1
+  geom_errorbar(position=position_dodge(), stat="identity",color="darkgray",width=.2) + #error bar geom and sizing
+  scale_y_continuous(labels = scales::percent) + #make y labels in percentage
+  labs(x="Task", y="Estimated proportion") + #explicit axis labels
+  ggtitle(label = "Estimated completion rates across all tasks", #title of graph
+          subtitle = "Confidence intervals at 90%, gray line indicates benchmark") + #subtitle of graph
+  ggthemes::theme_tufte(base_family="GillSans") + #tufte theming (max dataink) with sans serif font
+  scale_fill_manual(values=colpal)+
+  guides(fill=guide_legend(title="Task Legend"))+
+  theme(
+    axis.text.x = element_text(size = 15)
+    ) -> p.comp_raw
+
+#satisfaction
+df_summarised %>%
+  filter(group==1) %>%
+  filter(Measure=="Satisfaction") %>%
+  ggplot(aes(x=task, y=point.est,ymin=lowerci, ymax=upperci,fill=task_named)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_abline(intercept=4,slope=0, color = "gray",linetype = 2, size=2)+
+  coord_cartesian(ylim=c(1,5)) +
+  geom_errorbar(position=position_dodge(), stat="identity",color="darkgray",width=.2) +
+  labs(x="Task", y="Satisfaction score") +
+  ggtitle(label = "Average satisfaction measure scores across all tasks",
+          subtitle = "Confidence Intervals at 90%, gray line indicates benchmark") +
+  guides(fill=FALSE) +
+  ggthemes::theme_tufte(base_family="GillSans") + 
+  scale_fill_manual(values=colpal)+
+  guides(fill=guide_legend(title="Task Legend"))+
+  theme(
+    axis.text.x = element_text(size = 15),
+    axis.title.x = element_blank()
+    ) -> p.sat_raw #save object
+
+#time
+df_summarised %>%
+  filter(group==1) %>%
+  filter(Measure=="Time") %>%
+  group_by(task) %>%
+  ggplot(aes(x=task, y=point.est,fill=task_named,ymin=lowerci, ymax=upperci)) + 
+  geom_bar(position=position_dodge(), stat="identity") +
+  geom_errorbar(aes(ymax=spec,ymin=spec),position=position_dodge(), stat="identity", color = "#3C3C3C",linetype = 2, size=2)+
+  #coord_cartesian(ylim=c(0,1)) +
+  geom_errorbar(position=position_dodge(), stat="identity",color="darkgray",width=.2) +
+  labs(x="Task", y="Time geometric average in seconds") +
+  ggtitle(label = "Raw time averages across all tasks",
+          subtitle = "Confidence Intervals at 90%, gray lines indicate benchmark") +
+  #scale_y_time(labels=date_labels("%M $S"))+
+  facet_grid(.~task, scales="free")+
+  ggthemes::theme_tufte(base_family="GillSans") + 
+  scale_fill_manual(values=colpal)+
+  guides(fill=guide_legend(title="Task Legend"))+
+  theme(
+    axis.text.x = element_text(size = 15),
+    axis.title.x = element_blank(),
+    legend.position="none",
+    strip.background = element_blank(), #remove face label area
+    strip.text.x = element_blank() #remove facet label text
+  ) -> p.time_raw
+```
+
+
+```{r echo=FALSE}
+plot(p.comp_raw)
+```
+
+---
+
+```{r echo=FALSE}
+plot(p.sat_raw)
+```
+
+---
+
+```{r echo=FALSE}
+plot(p.time_raw)
+```
+
+###**Standardized** metrics show our converted values before their summarized by task.
+
+
+```{r include=FALSE}
+
+
+```

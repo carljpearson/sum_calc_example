@@ -84,7 +84,7 @@ df <- structure(list(par = c(1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L, 3L, 3L,
   #renaming key SUM vars so we don't have to recode -----
 
 colnames(df) #view col names to rename
-df %>% select(
+df %>% rename(
   task=task, #task identifier
   par=par, #participant identifer
   time=time, #task time
@@ -152,9 +152,7 @@ df$tspec[df$task==4] <- 300
 
 
 #data analysis: everything is now in place to begin to summarise and calculate -----
-#NOTE THIS SCRIPT IS MADE HAVING ONLY ONE GROUP/VERSION/ETC 
-#We will filter for a singleg group for now, but I plan to update this once I have all my real data with 2 versions
-df <- df %>% filter(group==1)
+
 
   #create completion df ----
 df %>%
@@ -289,9 +287,12 @@ df_summarised %>%
 
 #Plotting: we can now create data visualizations with our submeasure data, task level data, and final data ------
 
+#these plots are for only one version (you can run these before you finish part II)
+
   #raw measures
 #completion
 df_summarised %>% 
+  filter(group==1) %>% #choose grouping
   filter(Measure=="Completion") %>% #only completion
   ggplot(aes(x=task, y=point.est,ymin=lowerci, ymax=upperci, fill=task_named)) +  #vars to be plotted
   geom_bar(position=position_dodge(), stat="identity") + #make a bar plot with color palette
@@ -307,7 +308,7 @@ df_summarised %>%
   guides(fill=guide_legend(title="Task Legend"))+
   theme(
     axis.text.x = element_text(size = 15)
-    ) #> p.comp_raw
+    ) -> p.comp_raw
 
 ggsave(
   "plot_comp_raw.png",
@@ -319,6 +320,7 @@ ggsave(
 
 #satisfaction
 df_summarised %>%
+  filter(group==1) %>%
   filter(Measure=="Satisfaction") %>%
   ggplot(aes(x=task, y=point.est,ymin=lowerci, ymax=upperci,fill=task_named)) + 
   geom_bar(position=position_dodge(), stat="identity") +
@@ -347,6 +349,7 @@ ggsave(
 
 #time
 df_summarised %>%
+  filter(group==1) %>%
   filter(Measure=="Time") %>%
   group_by(task) %>%
   ggplot(aes(x=task, y=point.est,fill=task_named,ymin=lowerci, ymax=upperci)) + 
@@ -381,6 +384,7 @@ ggsave(
   #standardized measures
 #all sub scores on all tasks
 df_summarised %>%
+  filter(group==1) %>%
   group_by(task_named) %>%
   mutate(vjust_value=ifelse(point_est.nps<6,-.4,1.4)) %>%
   ggplot(aes(x=Measure, y=point_est.nps,fill=task_named,ymin=lowerci.nps, ymax=upperci.nps)) + 
@@ -423,6 +427,7 @@ for(i in 1:task_num){
   col <- colpal[i]  
   
   df_summarised %>%
+    filter(group==1) %>%
     filter(task==i) %>%
     mutate(vjust_value=ifelse(point_est.nps<6,-.4,1.4)) %>%
     mutate(point_est.z=(point_est.z - .5) * 200)%>%
@@ -459,6 +464,7 @@ for(i in 1:task_num){
 
 #nps version task summary
 df_task %>%
+  filter(group==1) %>%
   mutate(vjust_value=ifelse(point_est.nps<6,-.4,1.4)) %>%
   ggplot(aes(x=task, y=point_est.nps,fill=task_named,ymin=lowerci.nps, ymax=upperci.nps)) + 
   geom_bar(position=position_dodge(), stat="identity") +
