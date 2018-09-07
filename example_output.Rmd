@@ -15,6 +15,7 @@ library(tidyverse) #all data wrangling/plotting
 library(psych) #just for the geometric averaging
 library(knitr) #for rmarkdown
 library(ggthemes) #tufte plots
+library(shiny)
 
 #preparation: here we get the data and add our own extra data like time specs and color choices for plots -----
 
@@ -257,8 +258,8 @@ df_summarised %>%
 #add better labels for task var
 df_task$task_named[df_task$task==1] <- "Task 1: Start Function A"
 df_task$task_named[df_task$task==2] <- "Task 2: Start Function B"
-df_task$task_named[df_task$task==3] <- "Task 3: Start Function C"
-df_task$task_named[df_task$task==4] <- "Task 4: Start Fuction D"
+df_task$task_named[df_task$task==3] <- "Task 3: Combine Functions"
+df_task$task_named[df_task$task==4] <- "Task 4: Debug"
 #df_task$task_named[df_task$task==5] <- "Task 5: "
 #df_task$task_named[df_task$task==6] <- "Task 6: "
 
@@ -300,7 +301,9 @@ df_summarised %>%
 
 ## Single Usability Metric (SUM) Script Demo
 
-This R Markdown document shows the outputs of the script, both data tables and the resulting plots. The data are all fake, but made realistic relationships between all sub-measures. If you use the script, it's easy to drop your own data in (be sure it's in [long](http://www.cookbook-r.com/Manipulating_data/Converting_data_between_wide_and_long_format/) format). The script will point out where you need to rename variables. You need to be sure time measures are in seconds, completion is binary, and satisfaction should be on a 1-5 scale. It should look like the table below once you're done.
+The [SUM method](https://measuringu.com/sum-2/) follows a classic usability testing protocol of metrics collection across tasks. The novelty of the SUM lies in its combination of those metrics through standardized values. This R Markdown document shows the outputs of the script, both data tables and the resulting plots. The [script in its raw form can be found here.](https://github.com/carljpearson/sum_calc_example)
+
+ he data are all fake, but made realistic relationships between all sub-measures. If you use the script, it's easy to drop your own data in (be sure it's in [long](http://www.cookbook-r.com/Manipulating_data/Converting_data_between_wide_and_long_format/) format). The script will point out where you need to rename variables. You need to be sure time measures are in seconds, completion is binary, and satisfaction should be on a 1-5 scale. It should look like the table below once you're done.
 
 ```{r df, echo=FALSE}
 kable(head(df))
@@ -346,7 +349,7 @@ df_summarised %>%
     'NPS lower confidence' = lowerci.nps,
     'NPS upper confidence' = upperci.nps
     
-  ) %>% kable(caption="Selected example columns",digits = 2)
+  ) %>% head() %>% kable(caption="Selected example columns/rows",digits = 2)
 ```
 
 ####Next we average the NPS-like values to get our task level SUM scores.
@@ -376,11 +379,11 @@ df_SUM %>%
   ) %>% kable(caption="Selected example columns",digits = 2)
 ```
 
-####For our our final SUM scores, a table works well because we have just a few data points. For everything else, we may want some plots.
+####For our final SUM scores, a table works well because we have just a few data points. For everything else, we may want some plots.
 
 #Plotting
 
-###First up, we can plot our data for each group individually. This is helpful when you want to review how the first round of testing went (version 1, product 1, etc).
+###First up, we can plot our data for each group (version) individually. This is helpful when you want to review how the first round of testing went (version 1, product 1, etc).
 
 ###**Raw task** metrics show the data before any transformation.
 
@@ -474,7 +477,61 @@ plot(p.time_raw)
 ###**Standardized** metrics show our converted values before their summarized by task.
 
 
-```{r include=FALSE}
+```{r echo=FALSE}
 
+
+  df_summarised %>%
+    filter(group==1) %>%
+    mutate(vjust_value=ifelse(point_est.nps<6,-.4,1.4)) %>%
+    mutate(point_est.z=(point_est.z - .5) * 200)%>%
+    mutate(lowerci.z=(lowerci.z- .5 )* 200)%>%
+    mutate(upperci.z=(upperci.z- .5 )* 200)%>%
+    ggplot(aes(x=Measure, y=point_est.z,fill=task_named,ymin=lowerci.z, ymax=upperci.z)) + 
+    geom_bar(position=position_dodge(), stat="identity") +
+    coord_cartesian(ylim=c(-100,100)) +
+    geom_errorbar(position=position_dodge(), stat="identity",color="gray",width=.2) +
+    #geom_abline(intercept=.5,slope=0, color = "gray",linetype = 2, size=2) +
+    geom_text(aes(label = round(point_est.z,0),hjust = 2,vjust=vjust_value,y=0), size = 3, position = "identity",color="black") +
+    # scale_y_continuous(breaks=c(0:3)) +
+    labs(x="", y="Standard score") +
+    ggtitle(label = "Standardized Subscores for Tasks",
+            subtitle = "Confidence Intervals at 90%") +
+    ggthemes::theme_tufte(base_family="GillSans") + 
+    scale_fill_manual(values=colpal)+
+    theme(
+      axis.text.x = element_text(size = 12),
+      axis.text.y = element_text(size = 15),
+      axis.title.x = element_text(size = 15),
+      axis.title.y = element_text(size = 15),
+      title = element_text(size = 15),
+      legend.position="none") +
+  facet_wrap(~task)
+
+```
+
+
+###Finally, we can view our combined task metrics.
+
+```{r echo=FALSE}
+
+df_task %>%
+  filter(group==1) %>%
+  mutate(vjust_value=ifelse(point_est.nps<6,-.4,1.4)) %>%
+  ggplot(aes(x=task, y=point_est.nps,fill=task_named,ymin=lowerci.nps, ymax=upperci.nps)) +
+  geom_bar(position=position_dodge(), stat="identity") +
+  coord_cartesian(ylim=c(-100,100)) +
+  geom_errorbar(position=position_dodge(), stat="identity",color="gray",width=.2) +
+  #geom_abline(intercept=.5,slope=0, color = "gray",linetype = 2, size=2) +
+  geom_text(aes(label = round(point_est.nps,0),hjust=2,vjust=vjust_value,y=0), size = 3, position = "identity") +
+  labs(x="", y="SUM scores") +
+  ggtitle(label = "SUM scores for each measure on all tasks",
+          subtitle = "Confidence Intervals at 90%") +
+  scale_fill_manual(values=colpal)+
+  guides(fill=guide_legend(title="Task Legend"))+
+  ggthemes::theme_tufte(base_family="GillSans") + 
+  theme(
+    axis.text.x = element_text(size = 15)
+    ) -> p.all_tasks_nps
+plot(p.all_tasks_nps)
 
 ```
