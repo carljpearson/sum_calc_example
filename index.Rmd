@@ -314,8 +314,8 @@ kable(head(df))
 ####The script calculates all sub-task raw measures. 
 
 * **Task completion**
-  + LaPlace point estimates
-  + Adjusted Wald confidence intervals
+    + LaPlace point estimates
+    + Adjusted Wald confidence intervals
 * **Time-on-task** for completed tasks only
   + Geometric average point estimates (to help account for skew)
   + Standard confidence intervals
