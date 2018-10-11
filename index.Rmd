@@ -313,27 +313,27 @@ kable(head(df))
 
 ####The script calculates all sub-task raw measures. 
 
-**Task completion**
+* **Task completion**
     + LaPlace point estimates
     + Adjusted Wald confidence intervals
-**Time-on-task** for completed tasks only
-  + Geometric average point estimates (to help account for skew)
-  + Standard confidence intervals
-**Satisfaction** 
-  + Standard average point estimates
-  + Standard confidence intervals
+* **Time-on-task** for completed tasks only
+    + Geometric average point estimates (to help account for skew)
+    + Standard confidence intervals
+* **Satisfaction** 
+    + Standard average point estimates
+    + Standard confidence intervals
 
 ####To make it into the SUM, all values are standardized based on a benchmark value.
 
-**Task completion**
-  + Converted directly to percentage value based on the pnorm() function
-  + (A good benchmark is .78, but small samples make it tough to approximate a z-score)
-**Time-on-task** for completed tasks only
-  + You enter the time you aim for all users to complete the task by to get benchmarks
-  + Converted to z-score and then percentage equivalent
-**Satisfaction** 
-  + We use a standard benchmark of 4/5 for 'good' usability
-  + Converted to z-score and then percentage equivalent
+* **Task completion**
+    + Converted directly to percentage value based on the pnorm() function
+    + (A good benchmark is .78, but small samples make it tough to approximate a z-score)
+* **Time-on-task** for completed tasks only
+    + You enter the time you aim for all users to complete the task by to get benchmarks
+    + Converted to z-score and then percentage equivalent
+* **Satisfaction** 
+    + We use a standard benchmark of 4/5 for 'good' usability
+    + Converted to z-score and then percentage equivalent
   
 To make it more accesible to non-researchers, I translate the percentage to an **NPS like score of -100 to 100**. Here's what your summarized (or summari*s*ed, if you're using dplyr) table looks like:
 
@@ -451,7 +451,6 @@ df_summarised %>%
   theme(
     axis.text.x = element_text(size = 15),
     axis.title.x = element_blank(),
-    legend.position="none",
     strip.background = element_blank(), #remove face label area
     strip.text.x = element_blank() #remove facet label text
   ) -> p.time_raw
