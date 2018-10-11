@@ -303,7 +303,7 @@ df_summarised %>%
 
 The [SUM method](https://measuringu.com/sum-2/) follows a classic usability testing protocol of metrics collection across tasks. The novelty of the SUM lies in its combination of those metrics through standardized values. This R Markdown document shows the outputs of the script, both data tables and the resulting plots. The [script in its raw form can be found here.](https://github.com/carljpearson/sum_calc_example)
 
- he data are all fake, but made realistic relationships between all sub-measures. If you use the script, it's easy to drop your own data in (be sure it's in [long](http://www.cookbook-r.com/Manipulating_data/Converting_data_between_wide_and_long_format/) format). The script will point out where you need to rename variables. You need to be sure time measures are in seconds, completion is binary, and satisfaction should be on a 1-5 scale. It should look like the table below once you're done.
+ The data are all simulated with heuristically plausible relationships between all sub-measures. If you use the script, it's easy to drop your own data in (be sure it's in [long](http://www.cookbook-r.com/Manipulating_data/Converting_data_between_wide_and_long_format/) format). The script will point out where you need to rename variables. You need to be sure time measures are in seconds, completion is binary, and satisfaction should be on a 1-5 scale. It should look like the table below once you're done.
 
 ```{r df, echo=FALSE}
 kable(head(df))
